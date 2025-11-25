@@ -1,0 +1,392 @@
+==============================================
+PROGRAMME JEU UNO
+==============================================
+
+CONSTANTES
+    NBR_CARTES <- 48
+    CARTES_PAR_JOUEUR <- 7
+    COULEURS <- TABLEAU ["Rouge", "Vert", "Bleu", "Jaune"]
+    VALEURS <- TABLEAU ["0","1","2","3","4","5","6","7","8","9","+2","+4"]
+
+VARIABLES GLOBALES
+    VAR deck TABLEAU DE 48 ENTIERS
+    VAR indexPioche ENTIER
+    VAR mainJoueur TABLEAU DE 50 ENTIERS
+    VAR tailleMainJoueur ENTIER
+    VAR mainBot TABLEAU DE 50 ENTIERS
+    VAR tailleMainBot ENTIER
+    VAR topCard ENTIER
+
+
+==============================================
+FONCTION COULEUR
+PARAM code ENTIER
+DEBUT
+    SORTIE code / 12
+FIN
+
+
+==============================================
+FONCTION VALEUR
+PARAM code ENTIER
+DEBUT
+    SORTIE code % 12
+FIN
+
+
+==============================================
+FONCTION AFFICHER_CARTE
+PARAM code ENTIER
+DEBUT
+    VAR val ENTIER
+    val <- APPEL VALEUR(code)
+    
+    ECRIRE COULEURS[APPEL COULEUR(code)]
+    
+    SI val = 10 ALORS
+        ECRIRE "+2"
+    SINON SI val = 11 ALORS
+        ECRIRE "+4"
+    SINON
+        ECRIRE VALEURS[val]
+    FIN SI
+FIN
+
+
+==============================================
+FONCTION INITIALISER_DECK
+DEBUT
+    VAR i ENTIER
+    VAR c ENTIER
+    VAR v ENTIER
+    
+    i <- 0
+    
+    POUR c <- 0 A 3 FAIRE
+        POUR v <- 0 A 11 FAIRE
+            deck[i] <- c * 12 + v
+            i <- i + 1
+        FIN POUR
+    FIN POUR
+FIN
+
+
+==============================================
+FONCTION MELANGER_DECK
+DEBUT
+    VAR i ENTIER
+    VAR j ENTIER
+    VAR tmp ENTIER
+    
+    POUR i <- NBR_CARTES - 1 A 1 FAIRE
+        j <- ALEATOIRE(0, i + 1)
+        tmp <- deck[i]
+        deck[i] <- deck[j]
+        deck[j] <- tmp
+    FIN POUR
+FIN
+
+
+==============================================
+FONCTION PEUT_JOUER
+PARAM code ENTIER
+PARAM top ENTIER
+DEBUT
+    SI APPEL COULEUR(code) = APPEL COULEUR(top) ALORS
+        SORTIE VRAI
+    FIN SI
+    
+    SI APPEL VALEUR(code) = APPEL VALEUR(top) ALORS
+        SORTIE VRAI
+    FIN SI
+    
+    SORTIE FAUX
+FIN
+
+
+==============================================
+FONCTION PIOCHER
+PARAM main TABLEAU
+PARAM tailleMain ENTIER (passage par référence)
+PARAM afficher BOOLEEN
+DEBUT
+    VAR carte ENTIER
+    
+    SI indexPioche >= NBR_CARTES ALORS
+        SI afficher = VRAI ALORS
+            ECRIRE "La pioche est vide"
+        FIN SI
+        SORTIE
+    FIN SI
+    
+    carte <- deck[indexPioche]
+    indexPioche <- indexPioche + 1
+    main[tailleMain] <- carte
+    tailleMain <- tailleMain + 1
+    
+    SI afficher = VRAI ALORS
+        ECRIRE "Vous piochez : "
+        APPEL AFFICHER_CARTE(carte)
+        ECRIRE "\n"
+    FIN SI
+FIN
+
+
+==============================================
+FONCTION ENLEVER_CARTE
+PARAM main TABLEAU
+PARAM tailleMain ENTIER (passage par référence)
+PARAM k ENTIER
+DEBUT
+    VAR i ENTIER
+    
+    POUR i <- k A tailleMain - 2 FAIRE
+        main[i] <- main[i + 1]
+    FIN POUR
+    
+    tailleMain <- tailleMain - 1
+FIN
+
+
+==============================================
+FONCTION A_UNE_CARTE_JOUABLE
+PARAM main TABLEAU
+PARAM tailleMain ENTIER
+PARAM top ENTIER
+DEBUT
+    VAR i ENTIER
+    
+    POUR i <- 0 A tailleMain - 1 FAIRE
+        SI APPEL PEUT_JOUER(main[i], top) = VRAI ALORS
+            SORTIE VRAI
+        FIN SI
+    FIN POUR
+    
+    SORTIE FAUX
+FIN
+
+
+==============================================
+FONCTION AFFICHER_MAIN_JOUEUR
+DEBUT
+    VAR i ENTIER
+    
+    ECRIRE "\nVotre main :\n"
+    
+    POUR i <- 0 A tailleMainJoueur - 1 FAIRE
+        ECRIRE "  ", (i + 1), " : "
+        APPEL AFFICHER_CARTE(mainJoueur[i])
+        ECRIRE "\n"
+    FIN POUR
+FIN
+
+
+==============================================
+FONCTION EFFET_PLUS_2
+PARAM main TABLEAU
+PARAM tailleMain ENTIER (passage par référence)
+DEBUT
+    VAR i ENTIER
+    
+    ECRIRE "Effet +2 : vous devez piocher 2 cartes\n"
+    
+    POUR i <- 0 A 1 FAIRE
+        APPEL PIOCHER(main, tailleMain, VRAI)
+    FIN POUR
+FIN
+
+
+==============================================
+FONCTION EFFET_PLUS_4
+PARAM main TABLEAU
+PARAM tailleMain ENTIER (passage par référence)
+DEBUT
+    VAR i ENTIER
+    
+    ECRIRE "Effet +4 : vous devez piocher 4 cartes\n"
+    
+    POUR i <- 0 A 3 FAIRE
+        APPEL PIOCHER(main, tailleMain, VRAI)
+    FIN POUR
+FIN
+
+
+==============================================
+FONCTION TOUR_JOUEUR
+DEBUT
+    VAR choix ENTIER
+    VAR idx ENTIER
+    VAR carte ENTIER
+    VAR saisieValide BOOLEEN
+    
+    ECRIRE "\n----------------------------------\n"
+    ECRIRE "Votre tour\n"
+    ECRIRE "Carte au centre : "
+    APPEL AFFICHER_CARTE(topCard)
+    ECRIRE "\n"
+    
+    APPEL AFFICHER_MAIN_JOUEUR()
+    
+    // Gestion des effets spéciaux
+    SI APPEL VALEUR(topCard) = 10 ALORS
+        APPEL EFFET_PLUS_2(mainJoueur, tailleMainJoueur)
+        ECRIRE "Votre tour est passé à cause de l'effet +2\n"
+        topCard <- deck[indexPioche]
+        indexPioche <- indexPioche + 1
+        SORTIE
+    FIN SI
+    
+    SI APPEL VALEUR(topCard) = 11 ALORS
+        APPEL EFFET_PLUS_4(mainJoueur, tailleMainJoueur)
+        ECRIRE "Votre tour est passé à cause de l'effet +4\n"
+        topCard <- deck[indexPioche]
+        indexPioche <- indexPioche + 1
+        SORTIE
+    FIN SI
+    
+    // Vérifier si carte jouable
+    SI APPEL A_UNE_CARTE_JOUABLE(mainJoueur, tailleMainJoueur, topCard) = FAUX ALORS
+        ECRIRE "Aucune carte jouable, vous devez piocher\n"
+        APPEL PIOCHER(mainJoueur, tailleMainJoueur, VRAI)
+        SORTIE
+    FIN SI
+    
+    // Boucle de choix du joueur
+    TANT QUE VRAI FAIRE
+        ECRIRE "Choisissez une carte à jouer (1..", tailleMainJoueur, ") ou 0 pour piocher : "
+        LIRE choix
+        
+        SI choix = 0 ALORS
+            APPEL PIOCHER(mainJoueur, tailleMainJoueur, VRAI)
+            SORTIE DE LA BOUCLE
+        FIN SI
+        
+        SI choix < 1 OU choix > tailleMainJoueur ALORS
+            ECRIRE "Numéro invalide.\n"
+            // Continue la boucle
+        SINON
+            idx <- choix - 1
+            carte <- mainJoueur[idx]
+            
+            SI APPEL PEUT_JOUER(carte, topCard) = FAUX ALORS
+                ECRIRE "Cette carte ne peut pas être jouée\n"
+                // Continue la boucle
+            SINON
+                ECRIRE "Vous jouez : "
+                APPEL AFFICHER_CARTE(carte)
+                ECRIRE "\n"
+                
+                topCard <- carte
+                APPEL ENLEVER_CARTE(mainJoueur, tailleMainJoueur, idx)
+                SORTIE DE LA BOUCLE
+            FIN SI
+        FIN SI
+    FIN TANT QUE
+FIN
+
+
+==============================================
+FONCTION TOUR_BOT
+DEBUT
+    VAR i ENTIER
+    
+    ECRIRE "\n----------------------------------\n"
+    ECRIRE "Tour du bot\n"
+    ECRIRE "Carte au centre : "
+    APPEL AFFICHER_CARTE(topCard)
+    ECRIRE "\n"
+    
+    // Gestion des effets spéciaux
+    SI APPEL VALEUR(topCard) = 10 ALORS
+        APPEL EFFET_PLUS_2(mainBot, tailleMainBot)
+        ECRIRE "Le bot passe son tour à cause de l'effet +2\n"
+        topCard <- deck[indexPioche]
+        indexPioche <- indexPioche + 1
+        SORTIE
+    FIN SI
+    
+    SI APPEL VALEUR(topCard) = 11 ALORS
+        APPEL EFFET_PLUS_4(mainBot, tailleMainBot)
+        ECRIRE "Le bot passe son tour à cause de l'effet +4\n"
+        topCard <- deck[indexPioche]
+        indexPioche <- indexPioche + 1
+        SORTIE
+    FIN SI
+    
+    // Cherche une carte jouable
+    POUR i <- 0 A tailleMainBot - 1 FAIRE
+        SI APPEL PEUT_JOUER(mainBot[i], topCard) = VRAI ALORS
+            ECRIRE "Bot joue : "
+            APPEL AFFICHER_CARTE(mainBot[i])
+            ECRIRE "\n"
+            
+            topCard <- mainBot[i]
+            APPEL ENLEVER_CARTE(mainBot, tailleMainBot, i)
+            ECRIRE "Le bot a maintenant ", tailleMainBot, " cartes\n"
+            SORTIE
+        FIN SI
+    FIN POUR
+    
+    // Sinon pioche
+    ECRIRE "Le bot pioche.\n"
+    APPEL PIOCHER(mainBot, tailleMainBot, FAUX)
+    ECRIRE "Le bot a maintenant ", tailleMainBot, " cartes.\n"
+FIN
+
+
+==============================================
+PROGRAMME PRINCIPAL
+DEBUT
+    VAR i ENTIER
+    VAR joueurCourant ENTIER
+    VAR vainqueur ENTIER
+    
+    // Initialisation
+    APPEL INITIALISER_GENERATEUR_ALEATOIRE()
+    APPEL INITIALISER_DECK()
+    APPEL MELANGER_DECK()
+    
+    indexPioche <- 0
+    tailleMainJoueur <- 0
+    tailleMainBot <- 0
+    
+    // Distribution des cartes
+    POUR i <- 0 A CARTES_PAR_JOUEUR - 1 FAIRE
+        APPEL PIOCHER(mainJoueur, tailleMainJoueur, FAUX)
+        APPEL PIOCHER(mainBot, tailleMainBot, FAUX)
+    FIN POUR
+    
+    // Première carte au centre
+    topCard <- deck[indexPioche]
+    indexPioche <- indexPioche + 1
+    
+    joueurCourant <- 0
+    vainqueur <- -1
+    
+    // Boucle de jeu principale
+    TANT QUE VRAI FAIRE
+        SI joueurCourant = 0 ALORS
+            APPEL TOUR_JOUEUR()
+            SI tailleMainJoueur = 0 ALORS
+                vainqueur <- 0
+                SORTIE DE LA BOUCLE
+            FIN SI
+        SINON
+            APPEL TOUR_BOT()
+            SI tailleMainBot = 0 ALORS
+                vainqueur <- 1
+                SORTIE DE LA BOUCLE
+            FIN SI
+        FIN SI
+        
+        joueurCourant <- 1 - joueurCourant
+    FIN TANT QUE
+    
+    // Affichage du résultat
+    ECRIRE "\n----------------------------------\n"
+    SI vainqueur = 0 ALORS
+        ECRIRE "Vous avez gagné\n"
+    SINON
+        ECRIRE "Le bot a gagné\n"
+    FIN SI
+FIN
